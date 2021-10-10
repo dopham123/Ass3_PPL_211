@@ -4,6 +4,8 @@ Type: python run.py gen
 Then type: python run.py test LexerSuite
 Then type: python run.py test ParserSuite
 Then type: python run.py test ASTGenSuite
+Then type: python run.py test CheckerSuite
+Then type: python run.py test CodeGenSuite
 
 
 

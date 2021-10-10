@@ -1,4 +1,3 @@
-class main {
-            a:integer;
-            b:integer;
+int main () {
+            getIntLn();
         }

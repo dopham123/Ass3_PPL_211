@@ -4,27 +4,24 @@ from AST import *
 
 class ASTGenSuite(unittest.TestCase):
     def test_simple_program(self):
-        """Simple program: class main {} """
-        input = """class main {}"""
-        expect = str(Program([ClassDecl(Id("main"),[])]))
+        """Simple program: int main() {} """
+        input = """int main() {}"""
+        expect = str(Program([FuncDecl(Id("main"),[],IntType(),Block([],[]))]))
         self.assertTrue(TestAST.test(input,expect,300))
 
-    def test_class_with_one_decl_program(self):
+    def test_more_complex_program(self):
         """More complex program"""
-        input = """class main {
-            a:integer;
+        input = """int main () {
+            putIntLn(4);
         }"""
-        expect = str(Program([ClassDecl(Id("main"),[AttributeDecl(Instance(),VarDecl(Id("a"),IntType()))])]))
+        expect = str(Program([FuncDecl(Id("main"),[],IntType(),Block([],[CallExpr(Id("putIntLn"),[IntLiteral(4)])]))]))
         self.assertTrue(TestAST.test(input,expect,301))
     
-    def test_class_with_two_decl_program(self):
+    def test_call_without_parameter(self):
         """More complex program"""
-        input = """class main {
-            a:integer;
-            b:integer;
+        input = """int main () {
+            getIntLn();
         }"""
-        expect = str(Program([ClassDecl(Id("main"),
-            [AttributeDecl(Instance(),VarDecl(Id("a"),IntType())),
-             AttributeDecl(Instance(),VarDecl(Id("b"),IntType()))])]))
+        expect = str(Program([FuncDecl(Id("main"),[],IntType(),Block([],[CallExpr(Id("getIntLn"),[])]))]))
         self.assertTrue(TestAST.test(input,expect,302))
    

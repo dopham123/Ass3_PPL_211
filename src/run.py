@@ -1,25 +1,22 @@
 import sys,os
-sys.path.append('./test/')
-sys.path.append('./main/bkool/parser/')
-sys.path.append('./main/bkool/utils/')
-sys.path.append('./main/bkool/astgen/')
-sys.path.append('./main/bkool/checker/')
-sys.path.append('./main/bkool/codegen/')
 import subprocess
 import unittest
 from antlr4 import *
 
+for path in ['./test/','./main/bkool/parser/','./main/bkool/utils/','./main/bkool/astgen/','./main/bkool/checker/','./main/bkool/codegen/']:
+	sys.path.append(path)
 ANTLR_JAR = os.environ.get('ANTLR_JAR')
 TARGET_DIR = '../target'
-GENERATE_DIR = '' if sys.platform.startswith('win') else 'main/bkool/parser'
+GENERATE_DIR = 'main/bkool/parser'
 
 def main(argv):
     if len(argv) < 1:
         printUsage()
     elif argv[0] == 'gen':
-        subprocess.run(["java","-jar",ANTLR_JAR,"-Dlanguage=Python3" ,"-o","../target","-no-listener","-visitor","main/bkool/parser/BKOOL.g4"])
+        subprocess.run(["java","-jar",ANTLR_JAR,"-o","../target","-no-listener","-visitor","main/bkool/parser/BKOOL.g4"])
     elif argv[0] == 'clean':
         subprocess.run(["rm","-rf",TARGET_DIR + "/*"])
+               
     elif argv[0] == 'test':     
         if not os.path.isdir(TARGET_DIR + "/" + GENERATE_DIR):
             subprocess.run(["java","-jar",ANTLR_JAR,"-o",GENERATE_DIR,"-no-listener","-visitor","main/bkool/parser/BKOOL.g4"])

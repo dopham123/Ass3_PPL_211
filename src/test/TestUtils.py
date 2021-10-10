@@ -9,11 +9,11 @@ from BKOOLLexer import BKOOLLexer
 from BKOOLParser import BKOOLParser
 from lexererr import *
 from ASTGeneration import ASTGeneration
-'''from StaticCheck import StaticChecker
+from StaticCheck import StaticChecker
 from StaticError import *
 from CodeGenerator import CodeGenerator
 import subprocess
-'''
+
 JASMIN_JAR = "./external/jasmin.jar"
 TEST_DIR = "./test/testcases/"
 SOL_DIR = "./test/solutions/"
@@ -54,7 +54,7 @@ class TestLexer:
     def printLexeme(dest,lexer):
         tok = lexer.nextToken()
         if tok.type != Token.EOF:
-            dest.write(tok.text+";"+str(tok.type)+",")
+            dest.write(tok.text+",")
             TestLexer.printLexeme(dest,lexer)
         else:
             dest.write("<EOF>")
@@ -108,8 +108,6 @@ class TestAST:
         TestAST.check(SOL_DIR,inputfile,num)
         dest = open(os.path.join(SOL_DIR,str(num) + ".txt"),"r")
         line = dest.read()
-        if line != expect:
-            print(line+"*"+expect+"*")
         return line == expect
 
     @staticmethod
@@ -122,7 +120,7 @@ class TestAST:
         asttree = ASTGeneration().visit(tree)
         dest.write(str(asttree))
         dest.close()
-'''
+
 class TestChecker:
     @staticmethod
     def test(input,expect,num):       
@@ -194,5 +192,5 @@ class TestCodeGen():
             raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
         finally:
             f.close()
- '''           
+            
             

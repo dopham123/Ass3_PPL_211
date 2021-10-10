@@ -1,1 +1,1 @@
-Program([ClassDecl(Id(main),[AttributeDecl(Instance,VarDecl(Id(a),IntType)),AttributeDecl(Instance,VarDecl(Id(b),IntType))])])
+Program(List(FuncDecl(Id(main),List(),IntType,Block(List(),List(CallExpr(Id(getIntLn),List()))))))
