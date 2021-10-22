@@ -11,8 +11,10 @@ class CheckerSuite(unittest.TestCase):
 
     def test_diff_numofparam_stmt(self):
         """More complex program"""
-        input = """int main () {
-            putIntLn();
+        input = """class main {
+            int a = 5;
+            final int v = 6;
+            int a
         }"""
         expect = "Type Mismatch In Statement: CallExpr(Id(putIntLn),List())"
         self.assertTrue(TestChecker.test(input,expect,401))

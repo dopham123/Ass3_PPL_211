@@ -51,7 +51,7 @@ class StaticChecker(BaseVisitor,Utils):
 
     global_envi = [
         Symbol("io", ClassType("io"), {
-            "static_method": [
+            "global_sc_child": [
                 Symbol("readInt",MType([],IntType())),
                 Symbol("writeInt",MType([IntType()],VoidType())),
                 Symbol("writeIntLn",MType([IntType()],VoidType())),
@@ -64,7 +64,8 @@ class StaticChecker(BaseVisitor,Utils):
                 Symbol("readStr",MType([],StringType())),
                 Symbol("writeStr",MType([StringType()],VoidType())),
                 Symbol("writeStrLn",MType([StringType()],VoidType()))
-            ]
+            ],
+            "class_sc_child": []
         })    
     ]
             
@@ -82,7 +83,10 @@ class StaticChecker(BaseVisitor,Utils):
         #lưu tên của class first
         for x in ast.decl:
             if x.classname.name not in c:
-                c.append(Symbol(x.classname.name, ClassTyp(x.classname.name, None), {}))
+                c.append(Symbol(x.classname.name, ClassTyp(x.classname.name, None), {
+                    "global_sc_child": [],
+                    "class_sc_child": []
+                }))
             else:
                 raise Redeclared(Class(), x.classname.name)
         
@@ -121,6 +125,79 @@ class StaticChecker(BaseVisitor,Utils):
                                             z.value.get("global_sc_child").append(Symbol(y.decl.variable.name, y.decl.varType))
                                 #Instance
                                 else:
+                                    if isinstance(y.decl, ConstDecl): #y.decl: StoreDecl(ConstDecl or VarDecl)
+                                        #kiểm tra khai báo trùng id
+                                        if y.decl.constant.name in [child.name for child in z.value.get("class_sc_child")]:
+                                            raise Redeclared(Method(), y.name)
+                                        else:
+                                            #kiểm tra kiểu của khai báo const
+                                            if isinstance(y.decl.constType, self.visit(y.decl.value)): #check type constdecl
+                                                z.value.get("class_sc_child").append(Symbol(y.decl.constant.name, y.decl.constType, y.decl.constType))
+                                            else:
+                                                raise TypeMismatchInConstant(y)
+                                    #không phải ConstDecl thì là VarDecl
+                                    else:
+                                        #kiểm tra khai báo trùng id
+                                        if y.decl.variable.name in [child.name for child in z.value.get("class_sc_child")]:
+                                            raise Redeclared(Method(), y.name)
+                                        else:
+                                            z.value.get("class_sc_child").append(Symbol(y.decl.variable.name, y.decl.varType))
+                        break
+
+        for x in ast.decl:
+            if x.parentname.name:
+                for z in c:
+                    if z.name==x.classname.name: #tìm class trong env ứng với x
+                        for k in c: # tìm class trong env ứng với class cha của x
+                            if x.parentname.name == k.name:
+                                z.value = copy.deepcopy() #copy con của class cha và gắn vào class con
+                        for y in x.memlist: #y: MethodDecl or AttributeDecl
+                            #kiểm tra nếu là MethodDecl
+                            if isinstance(y, MethodDecl):
+                                if y.name in [child.name for child in z.value.get("global_sc_child")]:
+                                    raise Redeclared(Method(), y.name)
+                                else:
+                                    z.value.get("global_sc_child").append(Symbol(y.name, MType(self.returnParamType(y.param), y.returnType)))
+                            #Ngược lại là AttributeDecl
+                            else:
+                                #Static
+                                if isinstance(y.kind, Static): #y.kind: SIKind(Static or Instance)
+                                    if isinstance(y.decl, ConstDecl): #y.decl: StoreDecl(ConstDecl or VarDecl)
+                                        #kiểm tra khai báo trùng id
+                                        if y.decl.constant.name in [child.name for child in z.value.get("global_sc_child")]:
+                                            raise Redeclared(Method(), y.name)
+                                        else:
+                                            #kiểm tra kiểu của khai báo const
+                                            if isinstance(y.decl.constType, self.visit(y.decl.value)): #check type constdecl
+                                                z.value.get("global_sc_child").append(Symbol(y.decl.constant.name, y.decl.constType, y.decl.constType))
+                                            else:
+                                                raise TypeMismatchInConstant(y)
+                                    #không phải ConstDecl thì là VarDecl
+                                    else:
+                                        #kiểm tra khai báo trùng id
+                                        if y.decl.variable.name in [child.name for child in z.value.get("global_sc_child")]:
+                                            raise Redeclared(Method(), y.name)
+                                        else:
+                                            z.value.get("global_sc_child").append(Symbol(y.decl.variable.name, y.decl.varType))
+                                #Instance
+                                else:
+                                    if isinstance(y.decl, ConstDecl): #y.decl: StoreDecl(ConstDecl or VarDecl)
+                                        #kiểm tra khai báo trùng id
+                                        if y.decl.constant.name in [child.name for child in z.value.get("class_sc_child")]:
+                                            raise Redeclared(Method(), y.name)
+                                        else:
+                                            #kiểm tra kiểu của khai báo const
+                                            if isinstance(y.decl.constType, self.visit(y.decl.value)): #check type constdecl
+                                                z.value.get("class_sc_child").append(Symbol(y.decl.constant.name, y.decl.constType, y.decl.constType))
+                                            else:
+                                                raise TypeMismatchInConstant(y)
+                                    #không phải ConstDecl thì là VarDecl
+                                    else:
+                                        #kiểm tra khai báo trùng id
+                                        if y.decl.variable.name in [child.name for child in z.value.get("class_sc_child")]:
+                                            raise Redeclared(Method(), y.name)
+                                        else:
+                                            z.value.get("class_sc_child").append(Symbol(y.decl.variable.name, y.decl.varType))
                         break
 
         return [self.visit(x,c) for x in ast.decl]
