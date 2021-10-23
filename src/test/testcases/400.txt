@@ -1,1 +1,1 @@
-int main() {foo();}
+Program([ClassDecl(Id("main"),[AttributeDecl(Instance(),VarDecl(Id("a"),IntType(),IntLiteral(5))),AttributeDecl(Instance(),ConstDecl(Id("v"),IntType(),IntLiteral(6))),AttributeDecl(Instance(),VarDecl(Id("a"),IntType(),IntLiteral(5)))])])
