@@ -13,30 +13,36 @@ from Visitor import *
 from StaticError import *
 import copy
 
+from main.bkool.utils.AST import ArrayType, BoolType, FloatType, IntType, StringType
+
 # from main.bkool.utils.AST import IntType
 
 # from main.bkool.utils.AST import BoolType, ClassType, FloatType, IntType, MethodDecl, Static, StringType, VarDecl, VoidType
 
-class Type(ABC):
-    __metaclass__ = ABCMeta
-    pass
-class Prim(Type):
-    __metaclass__ = ABCMeta
-    pass
-class ClassTyp(Type):
-    def __init__(self, classname, parrentname = None):
-        self.classname = classname
-        self.parrentname = parrentname
+# class Type(ABC):
+#     __metaclass__ = ABCMeta
+#     pass
+class NullType(Type):
+    def __str__(self):
+        return "NullType"
 
 class MType:
     def __init__(self,partype: None,rettype):
         self.partype = (partype if partype else [])#list param type: []
         self.rettype = rettype #kiểu trả về của method
 
-# @dataclass
-class ArrayType(Type):
-    dimen: int #số lượng phần tử trong mảng
-    eletype: Type #kiểu của mỗi phần tử
+class ConstType:
+    def __init__(self,rettype):
+        self.rettype = rettype #kiểu trả về của biến
+
+class VarType:
+    def __init__(self,rettype):
+        self.rettype = rettype #kiểu trả về của biến
+
+# # @dataclass
+# class ArrayType(Type):
+#     dimen: int #số lượng phần tử trong mảng
+#     eletype: Type #kiểu của mỗi phần tử
 
 class Symbol:
     def __init__(self, name, mtype, value = None):
@@ -139,7 +145,7 @@ class StaticChecker(BaseVisitor):
                                                 field = 'static_attrib'
                                             else:
                                                 field = 'instance_attrib'
-                                            z.value.get(field).append(Symbol(y.decl.constant.name, y.decl.constType, y.decl.constType))
+                                            z.value.get(field).append(Symbol(y.decl.constant.name, ConstType(y.decl.constType), True))
                                         else:
                                             raise TypeMismatchInConstant(y.decl)
                                 #không phải ConstDecl thì là VarDecl
@@ -148,13 +154,15 @@ class StaticChecker(BaseVisitor):
                                     if y.decl.variable.name in [child.name for child in (z.value.get("static_attrib") + z.value.get("instance_attrib") + z.value.get("static_method") + z.value.get("instance_method"))]:
                                         raise Redeclared(Attribute(), y.decl.variable.name)
                                     else:
-                                        if y.decl.varInit:
-                                            self.visit(y.decl.varInit, c)
                                         if type(y.kind) is Static:
                                             field = 'static_attrib'
                                         else:
                                             field = 'instance_attrib'
-                                        z.value.get(field).append(Symbol(y.decl.variable.name, y.decl.varType))
+                                        value = False
+                                        if y.decl.varInit:
+                                            self.visit(y.decl.varInit, c)
+                                            value = True
+                                        z.value.get(field).append(Symbol(y.decl.variable.name, VarType(y.decl.varType), value))
                                 #Instance
                                 # else:
                                 #     print('===========================$$$$$$$$$$$')
@@ -227,7 +235,7 @@ class StaticChecker(BaseVisitor):
                                                 field = 'static_attrib'
                                             else:
                                                 field = 'instance_attrib'
-                                            z.value.get(field).append(Symbol(y.decl.constant.name, y.decl.constType, y.decl.constType))
+                                            z.value.get(field).append(Symbol(y.decl.constant.name, ConstType(y.decl.constType), True))
                                         else:
                                             raise TypeMismatchInConstant(y.decl)
                                 #không phải ConstDecl thì là VarDecl
@@ -236,13 +244,15 @@ class StaticChecker(BaseVisitor):
                                     if y.decl.variable.name in [child.name for child in (z.value.get("static_attrib") + z.value.get("instance_attrib") + z.value.get("static_method") + z.value.get("instance_method"))]:
                                         raise Redeclared(Attribute(), y.decl.variable.name)
                                     else:
-                                        if y.decl.varInit:
-                                            self.visit(y.decl.varInit, c)
                                         if type(y.kind) is Static:
                                             field = 'static_attrib'
                                         else:
                                             field = 'instance_attrib'
-                                        z.value.get(field).append(Symbol(y.decl.variable.name, y.decl.varType))
+                                        value = False
+                                        if y.decl.varInit:
+                                            self.visit(y.decl.varInit, c)
+                                            value = True
+                                        z.value.get(field).append(Symbol(y.decl.variable.name, VarType(y.decl.varType), value))
                                 #Instance
                                 # else:
                                 #     print('===========================$$$$$$$$$$$')
@@ -310,13 +320,15 @@ class StaticChecker(BaseVisitor):
             if ast.variable.name == x.name:
                 raise Redeclared(Variable(), ast.variable.name)
 
+        value = False
         if ast.varInit:
             self.visit(ast.varInit, o)
+            value = True
         
         # if ast.varType != self.visit(ast.varInit, o):
         #     raise 
 
-        o[0].append(Symbol(ast.variable.name, ast.varType))
+        o[0].append(Symbol(ast.variable.name, VarType(ast.varType), value))
 
     def visitConstDecl(self, ast, o):
         # constant : Id
@@ -329,7 +341,7 @@ class StaticChecker(BaseVisitor):
         if ast.constType != self.visit(ast.value, o):
             raise TypeMismatchInConstant(ast)
 
-        o[0].append(Symbol(ast.constant.name, ast.constType, ast.constType))
+        o[0].append(Symbol(ast.constant.name, ConstType(ast.constType), True))
     
     def visitBlock(self, ast, o):
         # decl:List[StoreDecl]
@@ -425,9 +437,10 @@ class StaticChecker(BaseVisitor):
                             return y.mtype.rettype
                     
                     #if don't exist in static_method
+                    #check if exist in instance_method
                     for y in x.value.get('instance_method'):
                         if y.name == ast.method.name:
-                            raise TypeMismatchInExpression(ast)
+                            raise IllegalMemberAccess(ast)
                     
                     #if don't exist method in class
                     raise Undeclared(Method(), ast.method.name)
@@ -456,13 +469,15 @@ class StaticChecker(BaseVisitor):
                             return y.mtype.rettype
                     
                     #if don't exist in instance_method
+                    #check if exist in static_method:
                     for y in x.value.get('static_method'):
                         if y.name == ast.method.name:
-                            raise TypeMismatchInExpression(ast)
+                            raise IllegalMemberAccess(ast)
                     
                     #if don't exist method in class
                     raise Undeclared(Method(), ast.method.name)
         
+    #check param in func match each other
     def checkParam(self, list1, list2):
         print('==============checkparam================')
         print(len(list1))
@@ -470,7 +485,9 @@ class StaticChecker(BaseVisitor):
         if len(list1) != len(list2):
             return False
         for i in range(len(list1)):
-            if type(list1[i]) != type(list2[i]):
+            if type(list1[i]) is FloatType and type(list2[i]) not in [IntType, FloatType]:
+                return False
+            elif type(list1[i]) != type(list2[i]):
                 return False
         return True
             
@@ -489,10 +506,114 @@ class StaticChecker(BaseVisitor):
         # else:
         #     return res.mtype.rettype
 
-    def visitIntLiteral(self,ast, c): 
+    def visitFieldAccess(self, ast, o):
+        # obj:Expr
+        # fieldname:Id
+        typeobj = self.visit(ast.obj, o) #có thể raise undeclare identity
+        #access static attrib
+        if type(ast.obj) is Id:
+            if type(typeobj) is not ClassType and ast.obj.name not in [x.name for x in o[-1]]: #vế sau khi kiếm dc id không phải classtype nhưng có class id
+                raise TypeMismatchInExpression(ast)
+
+            for x in o[-1]: # get class env
+                if ast.obj.name == x.name:
+                    for y in x.value.get('static_attrib'):
+                        #trường hợp tìm được attrib trong môi trường
+                        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        print(y.name)
+                        print(ast.method.name)
+                        if y.name == ast.fieldname.name:
+                            return y.mtype.rettype
+                    
+                    #if don't exist in static_attrib
+                    #check if exist in instance_attrib
+                    for y in x.value.get('instance_attrib'):
+                        if y.name == ast.fieldname.name:
+                            raise IllegalMemberAccess(ast)
+                    
+                    #if don't exist attrib in class
+                    raise Undeclared(Attribute(), ast.fieldname.name)
+
+        #trường hợp là expr: access instance attrib
+        else:
+            if type(typeobj) is not ClassType:
+                raise TypeMismatchInExpression(ast)
+
+            for x in o[-1]: # get class env
+                if ast.obj.name == x.name:
+                    for y in x.value.get('instance_attrib'):
+                        #trường hợp tìm được attrib trong môi trường
+                        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        print(y.name)
+                        print(ast.method.name)
+                        if y.name == ast.fieldname.name:
+                            return y.mtype.rettype
+                    
+                    #if don't exist in static_attrib
+                    #check if exist in instance_attrib
+                    for y in x.value.get('static_attrib'):
+                        if y.name == ast.fieldname.name:
+                            raise IllegalMemberAccess(ast)
+                    
+                    #if don't exist attrib in class
+                    raise Undeclared(Attribute(), ast.fieldname.name)
+
+    def visitId(self, ast, o):
+        for env in o[:-2]:
+            flag = False
+            for decl in env: #Symbol
+                if ast.name == decl.name:
+                    flag = True
+                    return decl.mtype.rettype
+            if flag:
+                break
+        
+        # tìm trong class env
+        for decl in o[-1]:
+            if ast.name == decl.name:
+                return decl.mtype
+
+        raise Undeclared(Identifier(), ast.name)
+    
+    def visitNewExpr(self, ast, o):
+        # classname:Id
+        # param:List[Expr]
+        pass
+
+    def visitArrayCell(self, ast, o):
+        # arr:Expr
+        # idx:Expr
+        typearr = self.visit(ast.arr, o)
+        typeidx = self.visit(ast.idx)
+        if type(typearr) is not ArrayType or type(typeidx) is not IntType:
+            raise TypeMismatchInExpression(ast)
+        return typearr.eleType
+
+    def visitIntLiteral(self,ast, o): 
         return IntType()
 
-    def visitFloatLiteral(self,ast, c): 
+    def visitFloatLiteral(self,ast, o): 
         return FloatType()
-    
 
+    def visitNullLiteral(self, ast, o):
+        return NullType()
+
+    def visitStringLiteral(self, ast, o):
+        return StringType()
+    
+    def visitBooleanLiteral(self, ast, o):
+        return BoolType()
+
+    def visitArrayLiteral(self, ast, o):
+        # value: List[Literal]
+        eletyp = self.visit(ast.value[0], o)
+        for x in ast.value:
+            typeother = self.visit(x, o)
+            if type(eletyp) != type(typeother):
+                raise IllegalArrayLiteral(ast)
+        return ArrayType(len(ast.value), eletyp)
+
+    def visitAssign(self, ast, o):
+        # lhs:Expr
+        # exp:Expr
+        pass
