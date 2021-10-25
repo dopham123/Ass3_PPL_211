@@ -1,1 +1,1 @@
-Program([ClassDecl(Id("main"),[AttributeDecl(Instance(),VarDecl(Id("a"),IntType(),IntLiteral(5))),AttributeDecl(Instance(),ConstDecl(Id("v"),IntType(),IntLiteral(6))),AttributeDecl(Instance(),VarDecl(Id("a"),IntType(),IntLiteral(5)))])])
+Program([ClassDecl(Id(main),[AttributeDecl(Instance,VarDecl(Id(a),IntType,IntLit(5))),AttributeDecl(Instance,ConstDecl(Id(v),IntType,IntLit(6))),AttributeDecl(Instance,VarDecl(Id(a),IntType,IntLit(5)))])])

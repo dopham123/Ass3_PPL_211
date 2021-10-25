@@ -6,18 +6,25 @@ class CheckerSuite(unittest.TestCase):
     def test_undeclared_function(self):
         """Simple program: int main() {} """
         input = Program([ClassDecl(Id("main"),[AttributeDecl(Instance(),VarDecl(Id("a"),IntType(),IntLiteral(5))),AttributeDecl(Instance(),ConstDecl(Id("v"),IntType(),IntLiteral(6))),AttributeDecl(Instance(),VarDecl(Id("a"),IntType(),IntLiteral(5)))])])
-        expect = "Undeclared Function: foo"
+        expect = "Redeclared Attribute: a"
         self.assertTrue(TestChecker.test(input,expect,400))
 
-    # def test_diff_numofparam_stmt(self):
-    #     """More complex program"""
-    #     input = """class main {
-    #         int a = 5;
-    #         final int v = 6;
-    #         int a
-    #     }"""
-    #     expect = "Type Mismatch In Statement: CallExpr(Id(putIntLn),List())"
-    #     self.assertTrue(TestChecker.test(input,expect,401))
+    def test_diff_numofparam_stmt(self):
+        """More complex program"""
+        input = """ class fact{
+
+                    }
+                    class Function extends fact {
+                        static int main(int a,b){
+                            a:=6*5;
+                        }
+                        int foo(){
+                            Function.main(2.5, 3);
+                        }
+                    }
+                """
+        expect = "Type Mismatch In Expression: CallExpr(Id(Function),Id(main),[FloatLit(2.5),IntLit(3)])"
+        self.assertTrue(TestChecker.test(input,expect,401))
     
     # def test_diff_numofparam_expr(self):
     #     """More complex program"""
