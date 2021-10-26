@@ -13,7 +13,7 @@ from Visitor import *
 from StaticError import *
 import copy
 
-from main.bkool.utils.AST import ArrayType, BoolType, FloatType, IntType, StringType
+from main.bkool.utils.AST import ArrayType, BoolType, ClassType, FieldAccess, FloatType, IntType, StringType, VoidType
 
 # from main.bkool.utils.AST import IntType
 
@@ -70,7 +70,8 @@ class StaticChecker(BaseVisitor):
             ],
             "instance_attrib": [],
             'static_method': [],
-            'instance_method': []
+            'instance_method': [],
+            'super_class': None
         })    
     ]
             
@@ -94,7 +95,8 @@ class StaticChecker(BaseVisitor):
                     "static_attrib": [],
                     "instance_attrib": [],
                     'static_method': [],
-                    'instance_method': []
+                    'instance_method': [],
+                    'super_class': None
                 }))
             else:
                 # print('#################')
@@ -208,7 +210,12 @@ class StaticChecker(BaseVisitor):
 
                         for k in c: # tìm class trong env ứng với class cha của x
                             if x.parentname.name == k.name:
+                                #copy môi trường
                                 z.value = copy.deepcopy(k.value) #copy con của class cha và gắn vào class con
+
+                                #cập nhật tên class cha
+                                x.value['super_class'] = k.name 
+
                         for y in x.memlist: #y: MethodDecl or AttributeDecl
                             #kiểm tra nếu là MethodDecl
                             if isinstance(y, MethodDecl):
@@ -354,8 +361,16 @@ class StaticChecker(BaseVisitor):
         # op:str
         # left:Expr
         # right:Expr
-        type1 = self.visit(ast.left, o)
-        type2 = self.visit(ast.right, o)
+        if type(ast.left) in [Id, FieldAccess]:
+            type1 = self.visit(ast.left, o).rettype
+        else:
+            type1 = self.visit(ast.left, o)
+        
+        if type(ast.right) in [Id, FieldAccess]:
+            type2 = self.visit(ast.right, o).rettype
+        else:
+            type2 = self.visit(ast.right, o)
+        # type2 = self.visit(ast.right, o)
         if ast.op in ['\\', '%']:
             if type(type1) is not IntType or type(type2) is not IntType:
                 raise TypeMismatchInExpression(ast)
@@ -523,7 +538,7 @@ class StaticChecker(BaseVisitor):
                         print(y.name)
                         print(ast.method.name)
                         if y.name == ast.fieldname.name:
-                            return y.mtype.rettype
+                            return y.mtype
                     
                     #if don't exist in static_attrib
                     #check if exist in instance_attrib
@@ -547,7 +562,7 @@ class StaticChecker(BaseVisitor):
                         print(y.name)
                         print(ast.method.name)
                         if y.name == ast.fieldname.name:
-                            return y.mtype.rettype
+                            return y.mtype
                     
                     #if don't exist in static_attrib
                     #check if exist in instance_attrib
@@ -564,7 +579,7 @@ class StaticChecker(BaseVisitor):
             for decl in env: #Symbol
                 if ast.name == decl.name:
                     flag = True
-                    return decl.mtype.rettype
+                    return decl.mtype
             if flag:
                 break
         
@@ -612,8 +627,75 @@ class StaticChecker(BaseVisitor):
             if type(eletyp) != type(typeother):
                 raise IllegalArrayLiteral(ast)
         return ArrayType(len(ast.value), eletyp)
-
+#note: Id and FieldAccess return ConstType or VarType
     def visitAssign(self, ast, o):
         # lhs:Expr
         # exp:Expr
+
+        # Id or FieldAccess
+        # if type(ast.lhs) in [Id, FieldAccess]:
+        #     type1 = self.visit(ast.lhs, o).rettype
+        # else:
+        #     type1 = self.visit(ast.lhs, o)
+        
+        # if type(ast.right) in [Id, FieldAccess]:
+        #     type2 = self.visit(ast.right, o).rettype
+        # else:
+        #     type2 = self.visit(ast.right, o)
+        type1 = self.visit(ast.lhs, o)
+        type2 = self.visit(ast.exp, o)
+        #check assign to constant
+        if type(type1) is ConstType:
+            raise CannotAssignToConstant(ast)
+
+        if type(type1) is VarType:
+            type1 = type1.rettype
+
+        if type(type2) in [ConstType, VarType]:
+            type2 = type2.rettype
+        
+        #check if lhs is voidtype
+        if type(type1) is VoidType:
+            raise TypeMismatchInStatement(ast)
+
+        #check type
+        if not self.checkType2Ele(type1, type2, o):
+            raise TypeMismatchInStatement(ast)
+
+    def visitIf(self, ast, o):
+        # expr:Expr
+        # thenStmt:Stmt
+        # elseStmt:Stmt = None # None if there is no else branch
         pass
+        
+    #giong nhau: True    |   khac nhau: False
+    def checkType2Ele(self, type1, type2, o): #Int, Float,...,Array,Class.
+        if type(type1) is FloatType and type(type2) not in [IntType, FloatType]:
+            return False
+        elif type(type1) is ArrayType and type2 is ArrayType:
+            # size : int
+            # eleType:Type
+            if type1.size != type2.size:
+                return False
+            elif type(type1.eleType) is FloatType and type(type2.eleType) not in [IntType, FloatType]:
+                return False
+            elif type(type1.eleType) != type(type2.eleType):
+                return False
+        elif type(type1) is ClassType and type(type2) is ClassType:
+            # classname:Id
+            classname1 = type1.classname.name
+            classname2 = type2.classname.name
+            classenv1 = self.findClassInEnv(classname1, o[-1])
+            classenv2 = self.findClassInEnv(classname2, o[-1])
+            if classenv2.name not in [classenv1.name, classenv2.value.get('super_class')]:
+                return False
+        elif type(type1) != type(type2):
+            return False
+        return True
+
+    #tìm class trong môi trường, trả về Symbol hoặc None
+    def findClassInEnv(self, classname, c): #với c là danh sách các classenv
+        for x in c:
+            if classname==x.name:
+                return x
+        return None
