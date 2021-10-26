@@ -13,7 +13,7 @@ from Visitor import *
 from StaticError import *
 import copy
 
-from main.bkool.utils.AST import ArrayType, BoolType, ClassType, FieldAccess, FloatType, IntType, StringType, VoidType
+from main.bkool.utils.AST import ArrayType, Block, BoolType, ClassType, FieldAccess, FloatType, IntType, StringType, VoidType
 
 # from main.bkool.utils.AST import IntType
 
@@ -314,10 +314,17 @@ class StaticChecker(BaseVisitor):
         # param: List[VarDecl]
         # returnType: Type  # None for constructor
         # body: Block
-        for x in ast.param:
-            self.visit(x, o)
 
-        self.visit(ast.body, o)
+        obj = [[]] + o
+        for x in ast.param:
+            self.visit(x, obj)
+
+        p = {
+            'rettype': ast.returnType,
+            'inloop': False
+        }
+
+        self.visit(ast.body, [obj, p])
 
     def visitVarDecl(self, ast, o):
         # variable : Id
@@ -345,17 +352,20 @@ class StaticChecker(BaseVisitor):
             if ast.constant.name == x.name:
                 raise Redeclared(Constant(), ast.constant.name)
 
-        if ast.constType != self.visit(ast.value, o):
+        typevalue = self.visit(ast.value, o)
+        if not self.checkType2Ele(ast.constType, typevalue):
             raise TypeMismatchInConstant(ast)
 
         o[0].append(Symbol(ast.constant.name, ConstType(ast.constType), True))
     
-    def visitBlock(self, ast, o):
+    def visitBlock(self, ast, o, p):
         # decl:List[StoreDecl]
         # stmt:List[Stmt]
         [self.visit(x, o) for x in ast.decl]
 
-        [self.visit(x, o) for x in ast.stmt]
+        for x in ast.stmt:
+            p = copy.deepcopy(p)
+            self.visit(x, o, p)
     
     def visitBinaryOp(self, ast, o):
         # op:str
@@ -442,7 +452,7 @@ class StaticChecker(BaseVisitor):
                         print(ast.method.name)
                         if y.name == ast.method.name:
                             #check param của method     note: y: Symbol
-                            if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param]):
+                            if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param], o):
                                 raise TypeMismatchInExpression(ast)
                             
                             #check return type is void?:
@@ -474,7 +484,7 @@ class StaticChecker(BaseVisitor):
                         #trường hợp tìm được method trong môi trường
                         if y.name == ast.method.name:
                             #check param của method
-                            if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param]):
+                            if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param], o):
                                 raise TypeMismatchInExpression(ast)
                             
                             #check return type is void?:
@@ -493,17 +503,19 @@ class StaticChecker(BaseVisitor):
                     raise Undeclared(Method(), ast.method.name)
         
     #check param in func match each other
-    def checkParam(self, list1, list2):
+    def checkParam(self, list1, list2, o):
         print('==============checkparam================')
         print(len(list1))
         print(len(list2))
         if len(list1) != len(list2):
             return False
         for i in range(len(list1)):
-            if type(list1[i]) is FloatType and type(list2[i]) not in [IntType, FloatType]:
+            if not self.checkType2Ele(list1[i], list2[i], o):
                 return False
-            elif type(list1[i]) != type(list2[i]):
-                return False
+            # if type(list1[i]) is FloatType and type(list2[i]) not in [IntType, FloatType]:
+            #     return False
+            # elif type(list1[i]) != type(list2[i]):
+            #     return False
         return True
             
         
@@ -599,7 +611,11 @@ class StaticChecker(BaseVisitor):
         # arr:Expr
         # idx:Expr
         typearr = self.visit(ast.arr, o)
+        typearr = self.returnTypeExp(typearr)
+
         typeidx = self.visit(ast.idx)
+        typeidx = self.returnTypeExp(typeidx)
+
         if type(typearr) is not ArrayType or type(typeidx) is not IntType:
             raise TypeMismatchInExpression(ast)
         return typearr.eleType
@@ -628,7 +644,10 @@ class StaticChecker(BaseVisitor):
                 raise IllegalArrayLiteral(ast)
         return ArrayType(len(ast.value), eletyp)
 #note: Id and FieldAccess return ConstType or VarType
-    def visitAssign(self, ast, o):
+    def visitAssign(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
         # lhs:Expr
         # exp:Expr
 
@@ -662,14 +681,172 @@ class StaticChecker(BaseVisitor):
         if not self.checkType2Ele(type1, type2, o):
             raise TypeMismatchInStatement(ast)
 
-    def visitIf(self, ast, o):
+    def visitIf(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
         # expr:Expr
         # thenStmt:Stmt
         # elseStmt:Stmt = None # None if there is no else branch
-        pass
-        
+        typexpr = self.visit(ast.expr, o)
+        if type(typexpr) in [ConstType, VarType]:
+            typexpr = typexpr.rettype
+
+        if type(typexpr) is not BoolType:
+            raise TypeMismatchInStatement(ast)
+
+        if type(ast.thenStmt) is Block:
+            obj = [[]] + o
+            self.visit(ast.thenStmt, [obj, p])
+        else:
+            self.visit(ast.thenStmt, [o, p])
+
+        if ast.elseStmt:
+            if type(ast.elseStmt) is Block:
+                obj = [[]] + o
+                self.visit(ast.elseStmt, [obj, p])
+            else:
+                self.visit(ast.elseStmt, [o, p])
+
+    def visitFor(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
+        # id:Id
+        # expr1:Expr
+        # expr2:Expr
+        # up: bool #True => increase; False => decrease
+        # loop:Stmt  
+        typeid = self.visit(ast.id, o)
+        typeid = self.returnTypeExp(typeid)
+        if type(typeid) is not IntType:
+            raise TypeMismatchInStatement(ast)
+
+        typexp1 = self.visit(ast.expr1, o)
+        typexp1 = self.returnTypeExp(typexp1)
+
+        typexp2 = self.visit(ast.expr2, o)
+        typexp2 = self.returnTypeExp(typexp2)
+
+        if type(typexp1) is not IntType or type(typexp2) is not IntType:
+            raise TypeMismatchInStatement(ast)
+
+        p['inloop'] = True
+        if type(ast.loop) is Block:
+            obj = [[]] + o
+            self.visit(ast.loop, [obj, p])
+        else:
+            self.visit(ast.loop, [o, p])
+
+    def visitCallStmt(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
+        # obj: Expr  
+        # method:Id
+        # param:List[Expr]
+
+        if type(ast.obj) is Id: #call static_method
+            typeobj = self.visit(ast.obj, o) #có thể raise undeclare identity
+            # class ClassType(Type):
+            #     classname:Id
+            
+            #kiểm tra có phải classtype không
+            if type(typeobj) is not ClassType and ast.obj.name not in [x.name for x in o[-1]]:
+                raise TypeMismatchInStatement(ast)
+
+            for x in o[-1]: # get class env
+                if ast.obj.name == x.name:
+                    for y in x.value.get('static_method'):
+                        #trường hợp tìm được method trong môi trường
+                        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                        print(y.name)
+                        print(ast.method.name)
+                        if y.name == ast.method.name:
+                            #check param của method     note: y: Symbol
+                            if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param], o):
+                                raise TypeMismatchInStatement(ast)
+                            
+                            #check return type is void?:
+                            if type(y.mtype.rettype) is not VoidType:
+                                raise TypeMismatchInStatement(ast)
+                            
+                            # return y.mtype.rettype
+                    
+                    #if don't exist in static_method
+                    #check if exist in instance_method
+                    for y in x.value.get('instance_method'):
+                        if y.name == ast.method.name:
+                            raise IllegalMemberAccess(ast)
+                    
+                    #if don't exist method in class
+                    raise Undeclared(Method(), ast.method.name)
+            
+            #if don't exist classname:
+            # raise Undeclared(Class(), ast.obj.name)
+
+        #trường hợp là expr:
+        else:
+            typeobj = self.visit(ast.obj, o) #có thể raise undeclare identity
+            if type(typeobj) is not ClassType:
+                raise TypeMismatchInStatement(ast)
+            for x in o[-1]:
+                if x.name == typeobj.classname.name:
+                    for y in x.value.get('instance_method'):
+                        #trường hợp tìm được method trong môi trường
+                        if y.name == ast.method.name:
+                            #check param của method
+                            if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param], o):
+                                raise TypeMismatchInStatement(ast)
+                            
+                            #check return type is void?:
+                            if type(y.mtype.rettype) is not VoidType:
+                                raise TypeMismatchInStatement(ast)
+                            
+                            # return y.mtype.rettype
+                    
+                    #if don't exist in instance_method
+                    #check if exist in static_method:
+                    for y in x.value.get('static_method'):
+                        if y.name == ast.method.name:
+                            raise IllegalMemberAccess(ast)
+                    
+                    #if don't exist method in class
+                    raise Undeclared(Method(), ast.method.name)
+
+    def visitReturn(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
+        # expr:Expr
+        typexp = self.visit(ast.expr, o)
+        typexp = self.returnTypeExp(typexp)
+
+        if not self.checkType2Ele(p.get('rettype'), typexp):
+            raise TypeMismatchInStatement(ast)
+
+    def visitBreak(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
+        if not p.get('inloop'):
+            raise MustInLoop(ast)
+
+    def visitContinue(self, ast, obj):
+        o = obj[0]
+        p = obj[1]
+        p = copy.deepcopy(p)
+        if not p.get('inloop'):
+            raise MustInLoop(ast)
+
     #giong nhau: True    |   khac nhau: False
     def checkType2Ele(self, type1, type2, o): #Int, Float,...,Array,Class.
+        if type(type1) is VarType:
+            type1 = type1.rettype
+
+        if type(type2) in [ConstType, VarType]:
+            type2 = type2.rettype
+        
         if type(type1) is FloatType and type(type2) not in [IntType, FloatType]:
             return False
         elif type(type1) is ArrayType and type2 is ArrayType:
@@ -692,6 +869,12 @@ class StaticChecker(BaseVisitor):
         elif type(type1) != type(type2):
             return False
         return True
+
+    def returnTypeExp(self, typexp):
+        if type(typexp) in [VarType, ConstType]:
+            return typexp.rettype
+        else:
+            return typexp
 
     #tìm class trong môi trường, trả về Symbol hoặc None
     def findClassInEnv(self, classname, c): #với c là danh sách các classenv
