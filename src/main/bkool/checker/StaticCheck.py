@@ -137,19 +137,27 @@ class StaticChecker(BaseVisitor):
                                         raise Redeclared(Attribute(), y.name)
                                     else:
                                         #kiểm tra kiểu của khai báo const
-                                        typexp = self.visit(y.decl.value, c)
-                                        print('==============check type const ==================')
-                                        print(type(y.decl.constType))
-                                        print(typexp)
-                                        print(self.checkType2Ele(y.decl.constType, typexp, c))
-                                        if self.checkType2Ele(y.decl.constType, typexp, c): #check type constdecl
-                                            if type(y.kind) is Static:
-                                                field = 'static_attrib'
+                                        if y.decl.value:
+                                            typexp = self.visit(y.decl.value, [[],c])
+                                            print('==============check type const ==================')
+                                            print(type(y.decl.constType))
+                                            print(typexp)
+                                            print(self.checkType2Ele(y.decl.constType, typexp, c))
+                                            if self.checkType2Ele(y.decl.constType, typexp, c): #check type constdecl
+                                                if type(y.kind) is Static:
+                                                    field = 'static_attrib'
+                                                else:
+                                                    field = 'instance_attrib'
+                                                z.value.get(field).append(Symbol(y.decl.constant.name, ConstType(y.decl.constType), True))
                                             else:
-                                                field = 'instance_attrib'
-                                            z.value.get(field).append(Symbol(y.decl.constant.name, ConstType(y.decl.constType), True))
+                                                raise TypeMismatchInConstant(y.decl)
+
+                                            #kiểm tra value gắn cho const:
+                                            if not typexp[1]:
+                                                raise IllegalConstantExpression(y.decl.value)
                                         else:
-                                            raise TypeMismatchInConstant(y.decl)
+                                            raise IllegalConstantExpression(None)
+                                        
                                 #không phải ConstDecl thì là VarDecl
                                 else:
                                     #kiểm tra khai báo trùng id
@@ -162,7 +170,7 @@ class StaticChecker(BaseVisitor):
                                             field = 'instance_attrib'
                                         value = False
                                         if y.decl.varInit:
-                                            self.visit(y.decl.varInit, c)
+                                            self.visit(y.decl.varInit, [[],c])
                                             value = True
                                         z.value.get(field).append(Symbol(y.decl.variable.name, VarType(y.decl.varType), value))
                                 #Instance
@@ -237,17 +245,26 @@ class StaticChecker(BaseVisitor):
                                         raise Redeclared(Attribute(), y.name)
                                     else:
                                         #kiểm tra kiểu của khai báo const
-                                        typexp = self.visit(y.decl.value, c)
-                                        print('==============check type const ==================')
-                                        print(self.checkType2Ele(y.decl.constType, typexp, c))
-                                        if not self.checkType2Ele(y.decl.constType, typexp, c): #check type constdecl
-                                            if type(y.kind) is Static:
-                                                field = 'static_attrib'
+                                        if y.decl.value:
+                                            typexp = self.visit(y.decl.value, [[],c])
+                                            print('==============check type const ==================')
+                                            print(type(y.decl.constType))
+                                            print(typexp)
+                                            print(self.checkType2Ele(y.decl.constType, typexp, c))
+                                            if self.checkType2Ele(y.decl.constType, typexp, c): #check type constdecl
+                                                if type(y.kind) is Static:
+                                                    field = 'static_attrib'
+                                                else:
+                                                    field = 'instance_attrib'
+                                                z.value.get(field).append(Symbol(y.decl.constant.name, ConstType(y.decl.constType), True))
                                             else:
-                                                field = 'instance_attrib'
-                                            z.value.get(field).append(Symbol(y.decl.constant.name, ConstType(y.decl.constType), True))
+                                                raise TypeMismatchInConstant(y.decl)
+
+                                            #kiểm tra value gắn cho const:
+                                            if not typexp[1]:
+                                                raise IllegalConstantExpression(y.decl.value)
                                         else:
-                                            raise TypeMismatchInConstant(y.decl)
+                                            raise IllegalConstantExpression(None)
                                 #không phải ConstDecl thì là VarDecl
                                 else:
                                     #kiểm tra khai báo trùng id
@@ -260,7 +277,7 @@ class StaticChecker(BaseVisitor):
                                             field = 'instance_attrib'
                                         value = False
                                         if y.decl.varInit:
-                                            self.visit(y.decl.varInit, c)
+                                            self.visit(y.decl.varInit, [[],c])
                                             value = True
                                         z.value.get(field).append(Symbol(y.decl.variable.name, VarType(y.decl.varType), value))
                                 #Instance
@@ -292,9 +309,9 @@ class StaticChecker(BaseVisitor):
                                 #                 self.visit(y.decl.varInit, c)
                                 #             z.value.get("instance_attrib").append(Symbol(y.decl.variable.name, y.decl.varType))
                         break
-        print('##############################')
-        print(c[2].name)
-        print(c[2].value.get('static_method'))        
+        # print('##############################')
+        # print(c[2].name)
+        # print(c[2].value.get('static_method'))        
         return [self.visit(x,c) for x in ast.decl]
 
     def returnParamType(self, param): #param: list[VarDecl]
@@ -570,6 +587,8 @@ class StaticChecker(BaseVisitor):
     def visitFieldAccess(self, ast, o):
         # obj:Expr
         # fieldname:Id
+        print('===========fieldaccess===========')
+        print(o)
         typeobj = self.visit(ast.obj, o) #có thể raise undeclare identity
         typeobj = self.returnTypeExp(typeobj)
 
@@ -584,7 +603,8 @@ class StaticChecker(BaseVisitor):
                         #trường hợp tìm được attrib trong môi trường
                         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                         print(y.name)
-                        print(ast.method.name)
+                        print(ast.fieldname.name)
+                        print(y.value)
                         if y.name == ast.fieldname.name:
                             return [y.mtype, y.value]
                     
@@ -608,7 +628,7 @@ class StaticChecker(BaseVisitor):
                         #trường hợp tìm được attrib trong môi trường
                         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                         print(y.name)
-                        print(ast.method.name)
+                        print(ast.fieldname.name)
                         if y.name == ast.fieldname.name:
                             return [y.mtype, y.value]
                     
