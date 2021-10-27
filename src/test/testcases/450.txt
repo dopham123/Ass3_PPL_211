@@ -1,0 +1,13 @@
+ class fact{
+
+                    }
+                    class Function extends fact {
+                        static int main(int a,b){
+                            a:=6*5;
+                        }
+                        int foo(){
+                            int c;
+                            c := Function.main(2.5, 3);
+                        }
+                    }
+                

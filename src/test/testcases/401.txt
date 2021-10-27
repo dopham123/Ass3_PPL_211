@@ -1,12 +1,5 @@
- class fact{
-
-                    }
-                    class Function extends fact {
-                        static int main(int a,b){
-                            a:=6*5;
-                        }
-                        int foo(){
-                            Function.main(2.5, 3);
-                        }
-                    }
-                
+class main {
+                    int a = 5;
+                    final int v = 6;
+                    float a;
+                }
