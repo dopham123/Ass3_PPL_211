@@ -1,0 +1,13 @@
+class main {
+                    int a = 5;
+                    final int v = 6;
+                    static int f(int c){
+
+                    }
+                }
+                class b extends main{
+                    int fa(int c){
+                        c := b.f(c);
+                        k.t() := 5;
+                    }
+                }

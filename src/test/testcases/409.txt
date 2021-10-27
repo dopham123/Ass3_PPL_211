@@ -1,0 +1,14 @@
+class main {
+                    int a = 5;
+                    final int v = 6;
+                    int f(int c){
+                        final float d = 5;
+                        float e = 6;
+                    }
+                }
+                class f extends main{
+                    int k(int c; float d){
+                        final float d = 5;
+                        float e = 6;
+                    }
+                }

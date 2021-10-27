@@ -1,1 +1,13 @@
-Program([ClassDecl(Id(main),[AttributeDecl(Instance,VarDecl(Id(a),IntType,IntLit(5))),AttributeDecl(Instance,ConstDecl(Id(v),IntType,IntLit(6))),AttributeDecl(Instance,VarDecl(Id(a),IntType,IntLit(5)))])])
+ class fact{
+
+                    }
+                    class Function extends fact {
+                        static int main(int a,b){
+                            a:=6*5;
+                        }
+                        int foo(){
+                            int c;
+                            c := Function.main(2.5, 3);
+                        }
+                    }
+                

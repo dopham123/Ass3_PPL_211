@@ -1,5 +1,1 @@
-class main {
-                    int a = 5;
-                    final int v = 6;
-                    float a;
-                }
+Program([ClassDecl(Id(main),[AttributeDecl(Instance,VarDecl(Id(a),IntType,IntLit(5))),AttributeDecl(Instance,ConstDecl(Id(v),IntType,IntLit(6))),AttributeDecl(Instance,VarDecl(Id(a),IntType,IntLit(5)))])])

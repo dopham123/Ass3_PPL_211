@@ -66,7 +66,7 @@ list_attrib_var
     ;
 
 attrib_const
-    :   ID '=' exp
+    :   ID ('=' exp)?
     ;
 
 attrib_var

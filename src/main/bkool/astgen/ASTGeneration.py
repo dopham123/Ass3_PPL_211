@@ -83,7 +83,7 @@ class ASTGeneration(BKOOLVisitor):
             return [self.visit(ctx.attrib_const())]
 
     def visitAttrib_const(self, ctx:BKOOLParser.Attrib_constContext):
-        return [Id(ctx.ID().getText()), self.visit(ctx.exp())]
+        return [Id(ctx.ID().getText()), self.visit(ctx.exp()) if ctx.exp() else None]
     #End: ^^^ : ConstDecl: ######################################################################
 
     #Start: VarDecl: ==============================================================================

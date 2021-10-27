@@ -2,9 +2,7 @@ class main {
                     int a = 5;
                     final int v = 6;
                     int f(int c){
-
-                    }
-                    float f(){
-
+                        float d;
+                        float d;
                     }
                 }

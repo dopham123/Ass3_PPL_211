@@ -1,1 +1,1 @@
-Redeclared Attribute: a
+Type Mismatch In Expression: CallExpr(Id(Function),Id(main),[FloatLit(2.5),IntLit(3)])

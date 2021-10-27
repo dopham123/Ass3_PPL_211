@@ -4,7 +4,9 @@ class main {
                     int f(int c){
 
                     }
-                    float f(){
-
+                }
+                class b extends main{
+                    int fa(int c){
+                        c := b.k;
                     }
                 }
