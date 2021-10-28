@@ -1,0 +1,8 @@
+class Function {
+                        void main(int i,n){
+                            for i := 10 downto n do {
+                                n := 5.6;
+                            }
+                        }
+                    }
+                

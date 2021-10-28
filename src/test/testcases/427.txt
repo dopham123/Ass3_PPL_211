@@ -1,0 +1,13 @@
+class main {
+                    int a = 5;
+                    static final int v = 6;
+                    static int f(int c){
+                        c := 12;
+                    }
+                }
+                class s extends main{
+                    static final float j = 3;
+                    static int fa(int c){
+                        s.j := 5.6;
+                    }
+                }

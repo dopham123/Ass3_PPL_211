@@ -1,1 +1,1 @@
-Type Mismatch In Expression: CallExpr(Id(Function),Id(main),[FloatLit(2.5),IntLit(3)])
+Type Mismatch In Expression: FieldAccess(CallExpr(Id(Function),Id(main),[IntLit(1),IntLit(2)]),Id(a))

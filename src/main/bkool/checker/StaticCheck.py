@@ -347,7 +347,7 @@ class StaticChecker(BaseVisitor):
         # returnType: Type  # None for constructor
         # body: Block
 
-        obj = [[]] + o
+        obj = o
         for x in ast.param:
             for y in obj[0]:
                 if x.variable.name == y.name:
@@ -703,7 +703,7 @@ class StaticChecker(BaseVisitor):
         typearr = self.visit(ast.arr, o)
         typearr = self.returnTypeExp(typearr)
 
-        typeidx = self.visit(ast.idx)
+        typeidx = self.visit(ast.idx, o)
         typeidx = self.returnTypeExp(typeidx)
 
         if type(typearr[0]) is not ArrayType or type(typeidx[0]) is not IntType:
@@ -864,10 +864,13 @@ class StaticChecker(BaseVisitor):
                             if not self.checkParam(y.mtype.partype, [self.visit(l, o) for l in ast.param], o):
                                 raise TypeMismatchInStatement(ast)
                             
+                            # print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                            # print(type(y.mtype.rettype))
                             #check return type is void?:
                             if type(y.mtype.rettype) is not VoidType:
                                 raise TypeMismatchInStatement(ast)
                             
+                            return
                             # return y.mtype.rettype
                     
                     #if don't exist in static_method
@@ -921,7 +924,7 @@ class StaticChecker(BaseVisitor):
         typexp = self.visit(ast.expr, o)
         typexp = self.returnTypeExp(typexp)
 
-        if not self.checkType2Ele(p.get('rettype'), typexp):
+        if not self.checkType2Ele(p.get('rettype'), typexp, o):
             raise TypeMismatchInStatement(ast)
 
     def visitBreak(self, ast, obj):

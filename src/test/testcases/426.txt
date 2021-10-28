@@ -1,0 +1,13 @@
+class main {
+                    static final int a = 5;
+                    static final int v = 6;
+                    static int f(int c){
+
+                    }
+                }
+                class b extends main{
+                    int fa(int c){
+                        final int s = 5;
+                        b.a := main.f(5);
+                    }
+                }

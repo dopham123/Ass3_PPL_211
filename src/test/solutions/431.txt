@@ -1,0 +1,1 @@
+Type Mismatch In Statement: If(BinaryOp(+,Id(c),Id(s)),AssignStmt(Id(c),IntLit(5)))

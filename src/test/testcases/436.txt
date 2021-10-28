@@ -1,0 +1,9 @@
+class Function {
+                        static void main(int i,n){
+                            float g = 5.6;
+                            for i := 10 downto n do {
+                                n := g;
+                            }
+                        }
+                    }
+                

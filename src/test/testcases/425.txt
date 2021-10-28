@@ -1,0 +1,8 @@
+class main {
+                    int a = 5;
+                    static final int v = 6;
+                    static int f(int c){
+                        final float g = 2;
+                        g := c;
+                    }
+                }

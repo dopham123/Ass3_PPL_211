@@ -1,0 +1,10 @@
+class Function {
+                        static int main(int i,n){
+                            float g = 5.6;
+                            for i := 10 downto n do {
+                                int [3] E = {1,2,3};
+                                E[3] := 5 + 4.4;
+                            }
+                        }
+                    }
+                

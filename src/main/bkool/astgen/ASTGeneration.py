@@ -107,6 +107,8 @@ class ASTGeneration(BKOOLVisitor):
         if ctx.STATIC():
             return MethodDecl(Static(), Id(ctx.ID().getText()), self.visit(ctx.list_para()) if ctx.list_para() else [], self.visit(ctx.mptype()), self.visit(ctx.block_state()))
         else:
+            # print(self.visit(ctx.block_state()))
+            # print('@@@@@@@@@@@@@@@@@@@@@@')
             return MethodDecl(Instance(), Id(ctx.ID().getText()), self.visit(ctx.list_para()) if ctx.list_para() else [],
                               self.visit(ctx.mptype()) if ctx.mptype() else None, self.visit(ctx.block_state()))
 
@@ -250,16 +252,16 @@ class ASTGeneration(BKOOLVisitor):
             return self.visit(ctx.list_string())
 
     def visitList_int(self, ctx:BKOOLParser.List_intContext):
-        return [ctx.INT_LIT().getText()] + (self.visit(ctx.list_int()) if ctx.list_int() else [])
+        return [IntLiteral(int(ctx.INT_LIT().getText()))] + (self.visit(ctx.list_int()) if ctx.list_int() else [])
 
     def visitList_float(self, ctx:BKOOLParser.List_floatContext):
-        return [ctx.FLOAT_LIT().getText()] + (self.visit(ctx.list_float()) if ctx.list_float() else [])
+        return [FloatLiteral(float(ctx.FLOAT_LIT().getText()))] + (self.visit(ctx.list_float()) if ctx.list_float() else [])
 
     def visitList_bool(self, ctx:BKOOLParser.List_boolContext):
-        return [ctx.BOOL_LIT().getText()] + (self.visit(ctx.list_bool()) if ctx.list_bool() else [])
+        return [BooleanLiteral(True) if str(ctx.BOOL_LIT().getText())[0] == "t" else BooleanLiteral(False)] + (self.visit(ctx.list_bool()) if ctx.list_bool() else [])
 
     def visitList_string(self, ctx:BKOOLParser.List_stringContext):
-        return [ctx.STRING_LIT().getText()] + (self.visit(ctx.list_string()) if ctx.list_string() else [])
+        return [StringLiteral(ctx.STRING_LIT().getText())] + (self.visit(ctx.list_string()) if ctx.list_string() else [])
     #End : ^^^ : Literals : ##################################################################################
 
     def visitList_arg(self, ctx:BKOOLParser.List_argContext):

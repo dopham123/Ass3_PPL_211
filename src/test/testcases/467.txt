@@ -1,0 +1,16 @@
+class Function {
+                        final float a = 5;
+                        static int main(int i,n){
+                            float g = 5.6;
+                            for i := 10 downto n do {
+                                int [3] E = {1,2,3};
+                            }
+                            break;
+                        }
+                    }
+                    class b extends Function{
+                        float j(){
+                            continue;
+                        }
+                    }
+                
